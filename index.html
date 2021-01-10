@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="./index.css">
+	<script src="./index.js" defer></script>
+	<title>Contact Merger</title>
+</head>
+<body>
+	<header>
+		<div id="loadingContainer">
+			<div id="loading" /*class="running"*/></div>
+		</div>
+		<span>Merge Contacts</span>
+		<input type="file" id="file" multiple required style="display:none;" onchange="initialCheck()">
+		<label id="headerButton" for='file'>Upload</label>
+	</header>
+
+	<section>
+		<div class="container">
+			<div id="count">Contact count: <b>N/A</b></div>
+		</div>
+	</section>
+
+	<section>
+		<div class="container">&nbsp;</div>
+	</section>
+</body>
+</html>
