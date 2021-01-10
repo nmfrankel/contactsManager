@@ -13,18 +13,53 @@
 			<div id="loading" /*class="running"*/></div>
 		</div>
 		<span>Merge Contacts</span>
-		<input type="file" id="file" multiple required style="display:none;" onchange="initialCheck()">
-		<label id="headerButton" for='file'>Upload</label>
+		<!-- <input type="text" placeholder="Search"> -->
+
+		<span id="buttons">
+			<input type="file" id="file" multiple required style="display:none;" onchange="loadFiles()">
+			<label id="upload" for='file' title="Upload your contacts">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="choose"><path d="M0 0h24v24H0z" fill="none"/><path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="chosen"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+			</label>
+
+			<span id="download" onclick="download()">
+				<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"/><path fill="none" d="M0 0h24v24H0z"/></svg>
+			</span>
+		</span>
 	</header>
 
-	<section>
-		<div class="container">
-			<div id="count">Contact count: <b>N/A</b></div>
-		</div>
-	</section>
+	<div id="msg">Loading...</div>
 
 	<section>
-		<div class="container">&nbsp;</div>
+		<div id="count">Contact count: <b>0</b></div>
+		<div class="container">Upload a contact file</div>
 	</section>
 </body>
 </html>
+
+
+
+
+<!-- <section>
+	<div id="count">Contact count: <b>0</b></div>
+	<div class="container">
+		<div id="tableHeader">
+			<!-- Fill in table headers --
+		</div>
+		<div id="contacts">
+			<!-- Auto insert contacts --
+			<div class="contact">
+				<input type="checkbox">
+				<span class="last">Last</span>,
+				<span class="first">First</span>
+				<span class="phone">929-333-9621</span>
+			</div>
+			<div class="contact">
+				<input type="checkbox">
+				<span class="last">Last</span>,
+				<span class="first">First</span>
+				<span class="phone">929-333-9621</span>
+			</div>
+		</div>
+	</div>
+</section> -->

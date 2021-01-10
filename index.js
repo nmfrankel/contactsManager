@@ -1,16 +1,71 @@
 // define static vars
-let loadingBar = document.getElementById('loading')
-fileType = ['vcf'],
-// contacts = [],
-contacts = '',
+let loadingBar = document.getElementById('loading'),
+msgEl = document.getElementById('msg'),
+fileType = ['vcf', 'csv'],
+errOccured = 0,
+countEl = document.getElementById('count'),
+contactCount = 0,
+contacts = [],
+rawContacts = '',
 resultDiv = document.querySelector('section:last-of-type>.container')
 
 
+// for development
+let testingData = ``
+/* let testingData = `BEGIN:VCARD
+VERSION:2.1
+FN;CHARSET=utf-8:Nosson  Meir Frankel
+N;Frankel;Nosson;Meir
+N:Frankel;Nosson ;Meir;;
+N;CHARSET=utf-8:Willner R  Ad
+FN:Nosson  Meir Frankel
+TEL;CELL:3121234321
+TEL;HOME:718-253-9012
+END:VCARD
+`;*/
+testingData = `BEGIN:VCARD
+VERSION:2.1
+FN;CHARSET=utf-8:Shlomo
+N;CHARSET=utf-8:Shlomo
+NOTE;CHARSET=utf-8:Best0chavrusah0ever
+TEL;CELL:7321234321
+TEL;HOME:7329871234
+EMAIL;X-INTERNET:randomemail@gmail.com
+ADR;WORK;PREF;CHARSET=utf-8:;;;Lakewood;;;
+URL:urn:uuid:8901260895162302680-8901260895162302680125
+END:VCARD
+`
+
+/* let finalData = [
+	{
+		Name: 'Frankel;Nosson;Meir;;',
+		FullName: 'Nosson Meir Frankel',
+		Tel: '+1 (231)-123-1223'
+	}
+] */
+
+
+// display a meesage to the user
+function displayMsg(msg = 'No message defined', type = 'vis', dura = 3500){
+	msgEl.innerText = msg
+	msgEl.classList.add(type)
+
+	setTimeout(() => {
+		msgEl.classList.remove(type)
+	}, dura)
+}
+
 // initial check of imported contacts file
-async function initialCheck(){
+async function loadFiles(reset = true){
 	loadingBar.classList.add('running')
-	resultDiv.innerText = 'Processing...';
-	contacts = ''
+	resultDiv.innerText = 'Processing...'
+	displayMsg('Processing...', 'vis', 1000)
+	if(reset){
+		contactCount = 0
+		countEl.innerHTML = `Contact count: <b>${contactCount}</b>`
+		rawContacts = ''
+		contacts = []
+	}
 
 	let files = document.getElementById('file').files
 	// make sure file is selected
@@ -18,82 +73,108 @@ async function initialCheck(){
 		// go through each contact
 		for (let i = 0; i < files.length; i++) {
 			// only allow vcf contact cards
-			if(fileType.indexOf(files[i].name.split('.').pop())<0) continue;
-			
-			// update how many contacts are being merged
-			document.getElementById('count').innerHTML = `Contact count: <b>${i}</b>`
-			// get file data
-			await files[i].text().then(data => parseContact(data))
+			if(fileType.indexOf(files[i].name.split('.').pop())<0){
+				console.log('Unsupported file type')
+				displayMsg('Unsupported file type', 'amber')
+				continue
+			}
+			// load and process file data
+			await files[i].text().then(data => {
+				// update how many contacts are being merged
+				contactCount += data.match(/BEGIN:VCARD/gi).length
+				countEl.innerHTML = `Contact count: <b>${contactCount}</b>`
+
+				// append this contact to main file
+				rawContacts += data
+			})
 		}
+ 
+		// resets upload button if no valid files were selected
+		if(rawContacts=='') document.getElementById('file').value=''
+
+		// convert text to JSON
+		contactsToJSON()
 
 		// check if doubles exist
-		// eliminateDoubles();// disabled till implemented
+		eliminateDoubles()
 
 		// show merged results
-		resultDiv.innerText = contacts
+		resultDiv.innerText = rawContacts
 	}else{
-		resultDiv.innerText = 'No files selected.'
+		console.log('No files selected')
+		displayMsg('No files selected', 'amber')
+		resultDiv.innerText = reset? 'Upload a contact file': rawContacts
 	}
 
-	setTimeout(loadingBar.classList.remove('running'), 250);
+	setTimeout(loadingBar.classList.remove('running'), 250)
 }
 
-// temp
-let testingData = `BEGIN:VCARD
-VERSION:2.1
-FN;CHARSET=utf-8:Frankel Nosson Meir
-N;CHARSET=utf-8:Frankel Nosson Meir
-TEL;CELL:2341231234
-END:VCARD
-`;
-/* let finalData = [
-	{
-		Name: 'Frankel;Nosson;Meir;;',
-		FullName: 'Nosson Meir Frankel',
-		Tel: '1231-123-1223'
-	}
-] */
-function parseContact(data){
-/* START: OG working */
-	// append this contact to main file
-	contacts += data
-/* END: OG working */
-
-
+// converts .vcf contacts into JSON
+function contactsToJSON(){
 	// turn a single contact block into an array where each item is a single contact
-	data = data.replace(/BEGIN:VCARD(?:\n|\s\s)/gi, '["')
-		// .replace(/VERSION:\d.?\d\n|CHARSET=utf-8:/gi, '')
-		.replace(/VERSION:\d.?\d(?:\n|\s\s)/gi, '')
-		.replace(/END:VCARD(?:\n|\s\s)?/gi, ']')
-		.replace(/(?:\n|\s\s)(?=\w)/gi, '",\n')
-		.replace(/(?<=(PHOTO|NOTE)[\w\d\s;=:/+-]{0,})\n\s?/g, "")
-		.replace(/(?:\n|\s\s)/gi, '"')
-		.replace(/\]\[/gi, '],[')
-		// .replace(/(?<!http)s?:/g, "\":\"")
+	let rawTemp = rawContacts.replace(/BEGIN:VCARD(?:\n|\s\s)/gi, '["')
+	// .replace(/VERSION:\d.?\d\n|CHARSET=utf-8:/gi, '')
+	.replace(/VERSION:\d.?\d(?:\n|\s\s)/gi, '')
+	.replace(/END:VCARD(?:\n|\s\s)?/gi, ']')
+	.replace(/   ?/gi, ' ')
+	.replace(/(?:PHOTO|NOTE)[\w\d\s;=:/+-]+(?=])/gi, '')// temp remove images from processing
+	// .replace(/(?<=(PHOTO|NOTE)[\w\d\s;=:/+-]{0,})\n\s?/g, "")// converts notes or photos into one line
+	.replace(/(?:\n|\s\s)(?=\w)/gi, '",\n')
+	// .replace(/\=(?:\n|\s\s)\=/gi, '=')// fixes encoded notes
+	.replace(/(?:\n|\s\s)/gi, '"')
+	.replace(/\]\[/gi, '],[')
+	// .replace(/(?<!http)s?:/g, "\":\"")// if turning contact directly into JSON
 
-		// console.log(data)// for development
-		data = JSON.parse(data)
-		// console.log(data)// for development
+	// console.log(rawTemp);return// for development
+	defineFields(JSON.parse(`[${rawTemp}]`))
+}
+// convert JSON contacts into .vcf
+function contactsToVCF(){
+	// change into promise
 
-	// lookout if newline contains a key:value \\
-	// lookout if newline contains a key:value \\
+	console.log('FINISH: once contacts are converting to JSON')
+	return
+}
 
-	// loop through each item -> one contact
-	data.forEach(item => {
-		// let sContact= {};
-		let temp = item.match(/^([\w\W]+);([\w\W]{0,}):([\w\W]{0,})/)// match "N:;" -> a valid empty name
-		console.log(temp? `Parsed -> Main: ${temp[1]}, Sub: ${temp[2]}, Value: ${temp[3]}`: `Error: ${item}`)// for development
+// takes array of contacts and reads fields and stores to JSON
+function defineFields(tempArr){
+	// loop through array and store values based on fields
+	tempArr.forEach((single, index) => {
+		let tempContact = {}
+
+		single.forEach(item => {
+			// let uuid = Math.floor(Math.random()*6231782)
+			let matched = item.match(/^([\w\d]+)[;:](?:(.{0,}):)?(.{0,})/)// match "N:;" -> a valid empty name
+			// console.log(matched? `Parsed -> Main: ${matched[1]}, Sub: ${matched[2]}, Value: ${matched[3]}`: `Error: ${item}`)// for development
+
+			switch (matched[1]) {
+				case 'N':
+					tempContact.N = matched[3]
+					break;
+				case 'FN':
+					tempContact.FN = matched[3]
+					break;
+
+				default:
+					break;
+			}
+		});
+
+
+		console.log(tempContact)
+		// contacts.push(JSON.parse(tempContact))
+	})
+}
+
+// pretty easy function name... guess
+function eliminateDoubles(){
+	
+	console.error('FINISH: eliminateDoubles')
+	return 
+	contacts.forEach(element => {// try array.filter()
+		console.log(element)
 	});
 }
-parseContact(testingData);
-
-/*
-DONE --	parse every contact block, i.e. from 'BEGIN:VCARD' untill 'END:VCARD'
-
-	 --	store to a functional data type that can easily be searched
-
-	 --	append to an array of all the contacts (to improve search)
-*/
 
 // Format phone number to (XXX) XXX-XXXX
 function formatPhone(number){
@@ -101,9 +182,28 @@ function formatPhone(number){
 	return tempNum && !isNaN(tempNum)? `(${tempNum[1]}) ${tempNum[2]}-${tempNum[3]}`: number
 }
 
-// pretty easy description... guess
-function eliminateDoubles(){
-	contacts.forEach(element => {
-		console.log(element)
-	});
+// download modified contacts
+function download(filename = false){
+	let exportData = 'data:text/csv;charset=utf-8,',
+	link
+
+	// load contacts
+	exportData += contactsToVCF() || ''
+
+	// escape if no contacts were loaded
+	if (exportData.length <= 28){
+		displayMsg('An error occured while downloading contacts', 'err')
+		return
+	}
+
+	// set filename
+	if(!filename) filename = `Contacts export - ${new Date().getTime().toString().substr(-6)}.vcf`
+
+	// init download
+	link = document.createElement('a')
+	link.setAttribute('href', encodeURI(exportData))
+	link.setAttribute('download', filename)
+	// link.click()
+
+	return 'Finish contactsToVCF() to download data'
 }

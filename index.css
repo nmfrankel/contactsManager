@@ -40,8 +40,7 @@ header{
 	display: block;
 	height: 50px;
 	box-sizing: border-box;
-	padding: 14px 35px;
-	margin-bottom: 25px;
+	padding: 14px 75px;
 	width: 100%;
 	user-select: none;
 	box-shadow: 0px 0px 8px 1px #eee;
@@ -51,30 +50,74 @@ header{
 	font-weight: 700;
 	/* border-bottom: 1px solid #ddd; */
 }
-header input:valid{
+header input[type=file]:valid{
 	background: pink;
 }
-header #headerButton{
-	font-size: .9em;
+header #buttons{
+	display: inline;
+	float: right;
+}
+header #download{
+	padding: 10px;
+	cursor: pointer;
+}
+header #upload{
+	position: relative;
+	display: inline-block;
+	height: 24px;
+	width: 50px;
+}
+header #upload svg#choose{
 	position: absolute;
-	top: 9px;
-	right: 35px;
-	padding: 5px 25px;
-	border-radius: 6px;
-	background: #7bc2ff;
+	top: -11px;
+	right: 0px;
+	padding: 10px;
 	cursor: pointer;
 	transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+	cursor: pointer;
 }
-header input:valid+#headerButton{
-	background: #56d366;
+header #upload svg#chosen{
+	position: absolute;
+	top: -1px;
+	right: 10px;
+	opacity: 0;
+	transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+	cursor: pointer;
+}
+header input[type=file]:valid+#upload svg#choose{
+	opacity: 0;
+}
+header input[type=file]:valid+#upload svg#chosen{
+	opacity: 1;
+}
+#msg{
+	position: relative;
+	top: -100px;
+	width: 350px;
+	margin: 0 auto;
+	padding: 15px 25px;
+	background: #ddd;
+	text-align: center;
+	transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+}
+#msg.vis, #msg.amber, #msg.err{
+	top: 0px;
+}
+#msg.amber{
+	background: #ee8f00;
+	color: #fff;
+}
+#msg.err{
+	background: #de3e16;
+	color: #fff;
 }
 section{
 	width: 85%;
 	max-width: 1100px;
-	margin: 0 auto;
+	margin: 50px auto 35px;
 }
 section>.container{
-	padding: 25px;
+	padding: 25px 0;
 }
 
 
@@ -83,12 +126,13 @@ section>.container{
 
 @keyframes loading{
 	0%, 100%{
-		background: #4caf50;
+		background: #60db65;
 	}
 	10%{
 		left: -50px;
 	}
 	60%{
+		background: #4caf50;
 		width: 50%;
 	}
 	100%{
