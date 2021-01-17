@@ -2,20 +2,24 @@
 let loadingBar = document.getElementById('loading'),
 msgEl = document.getElementById('msg'),
 validExtention = ['vcf', 'csv'],
-errOccured = 0,
 countEl = document.getElementById('count'),
-contactCount = 0,
 contacts = []
+
+// default settings variables
+
 
 // start: for development
 let rawContacts = '',
 resultDiv = document.querySelector('section:last-of-type>.container'),
 testData // set in the preceding fetch
 
-/* fetch('./testing/doubleSpace.vcf')
+fetch('./testing/doubleSpace.vcf')
 	.then(res => res.text())
-	.then(txt => testData = txt)
-	.catch(err => console.error(err)) */
+	.then(txt => {
+		vCard.parse(txt)
+		testData = txt
+	})
+	.catch(err => console.error(err))
 // end: for development
 
 
@@ -32,47 +36,49 @@ function displayMsg(msg = 'No message defined', type = 'vis', dura = 3500){
 }
 
 // initial check of imported contacts file
-async function loadFiles(reset = true){
+async function loadFiles(reset = false){
 	loadingBar.classList.add('running')
 	resultDiv.innerText = 'Processing...'
 	displayMsg('Processing...', 'vis', 1000)
-	if(reset){
-		contactCount = 0
-		countEl.innerText = contactCount
-		rawContacts = ''
-		contacts = []
-	}
 
+	// on upload remove previously uploaded contacts
+	if(reset)
+		contacts = [],
+		countEl.innerText = contacts.length,
+		rawContacts = ''
+
+	// check that a file is selected
 	let files = document.getElementById('file').files
-	// make sure file is selected
 	if(files.length>0){
 		// go through each contact
-		for (let i = 0; i < files.length; i++) {
+		await Promise.all([...files].map(async (file) => {
+
 			// only allow vcf contact cards
-			if(validExtention.indexOf(files[i].name.split('.').pop())<0){
+			if(validExtention.indexOf(file.name.split('.').pop())<0){
 				console.log('Unsupported file type')
 				displayMsg('Unsupported file type', 'amber')
-				continue
+				return
 			}
-			// load and process file data
-			await files[i].text().then(data => {
-				// update how many contacts are being merged
-				contactCount += data.match(/BEGIN:VCARD/gi).length
-				countEl.innerText = contactCount
 
+			// load and process file data
+			await file.text().then(data => {
 				// append this contact to main file
 				rawContacts += data
+				// convert vCard to JSON and append to 'contacts'
+				vCard.parse(data).forEach(singleContact => {
+					contacts.push(singleContact)
+					// update how many contacts were loaded in
+					countEl.innerText = contacts.length
+				})
 			})
-		}
- 
+
+		}))
+
 		// resets upload button if no valid files were selected
 		if(rawContacts=='') document.getElementById('file').value=''
 
-		// convert text to JSON
-		vCard.parse(rawContacts)
-
 		// check if doubles exist
-		eliminateDoubles()
+		doubles.detect()
 
 		// show merged results
 		resultDiv.innerText = rawContacts
@@ -86,14 +92,9 @@ async function loadFiles(reset = true){
 }
 
 
+// manage reading and creating vCards to be used for interface
 class vCard{
 	static parse(data = '') {
-
-
-// take input 'data' split each card into json then loop and split
-// then return one big json array of all the contacts
-
-
 
 		// convert a vCard into an array where each item is a single contact
 		let rawTemp = data.replace(/BEGIN:VCARD(?:\n|\s\s)/gi, '["')
@@ -105,12 +106,38 @@ class vCard{
 		.replace(/(?:\n|\s\s)/gi, '"')
 		.replace(/\]\[/gi, '],[')
 		.replace(/\\/gi, '')
-
-		console.log(rawTemp)
 		let tempArr = JSON.parse(`[${rawTemp}]`)
 
-		// send to outer function while testing
-		defineFields(tempArr)
+		// loop through array of contacts and convert to array of js objects
+		let tempContacts = []
+		tempArr.forEach((single, i) => {
+			tempContacts[i] = {}
+
+			single.forEach(item => {
+				let singleValue = ['N', 'FN', 'BDAY', 'NICKNAME', 'ROLE', 'TITLE', 'URL', 'NOTE']
+				let skipValues = ['AGENT', 'GEO', 'MAILER', 'PRODID', 'REV', 'TZ', 'UID']
+	
+				let matched = item.match(/^([\w\d\.-]+);?(.*):(.*)/),
+				property = matched[1].trim(),
+				meta = matched[2].trim(),
+				value = matched[3].trim()
+
+				// save value to this contacts js object
+				if(skipValues.indexOf(property) >= 0){
+					return
+				}else if(singleValue.indexOf(property) >= 0){
+					tempContacts[i][property] = value
+				}else{
+					if(!tempContacts[i][property]) tempContacts[i][property] = []
+					tempContacts[i][property].push({meta: meta, val: value})
+				}
+				// console.log(property, meta, `'${value}'`)
+			});
+		})
+		
+		// send back an array of contacts processed
+		console.log(tempContacts)// for development
+		return tempContacts
 	}
 
 	static generate(data = '') {
@@ -127,41 +154,10 @@ class vCard{
 
 
 
-
-
-// takes array of contacts and reads fields and stores to JSON
-function defineFields(tempArr){
-	// loop through array and store values based on fields
-	tempArr.forEach((single, index) => {
-		let tempContact = {}
-
-		single.forEach(item => {
-
-			let test = item.match(/^([\w-]+)[;:]([\w\d=-]{0,})?[;:]?(.{0,})/gi)
-			// ^([\w-]+)[;:]([\w\d=-]{0,})?[;:]?(.{0,})
-			console.log(test)
-
-
-			let singleValue = ['N', 'FN']
-			// let property = item.match(/^([\w-]+)[;:]/)[1]
-
-			// let matched = item.match(/^([\w-]+)[;:]([\w\d=-]{0,})?[;:]?(.{0,})/g)
-			/* if(singleValue.indexOf(matched[1])>=0){
-				tempContact[matched[1]] = matched[3].trim()
-				// tempContact[matched[1]] = {meta: matched[2], val: matched[3]}
-			}else{
-				tempContact[matched[1]] = {meta: matched[2].trim(), val: matched[3].trim()}
-			} */
-
-			// console.log(matched? `Parsed -> Main: ${matched[1]}, Sub: ${matched[2]}, Value: ${matched[3]}`: `Error: ${item}`)// for development
-		});
-
-		// console.log(tempContact)
-		// contacts.push(JSON.parse(tempContact))
-	})
-}
-
-
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
 
 
 
@@ -193,30 +189,6 @@ function download(filename = false){
 	return 'Finish vCard.generate() to download data'
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// NOT IMPLEMENTED YET
-// NOT IMPLEMENTED YET
-// NOT IMPLEMENTED YET
-// NOT IMPLEMENTED YET
-
-
-
-
 // generate a unique id
 function uniqid(){
 	function randNumSeg(){
@@ -225,20 +197,27 @@ function uniqid(){
 	return `${randNumSeg()+randNumSeg()}-${randNumSeg()}-${randNumSeg()}-${randNumSeg()}-${randNumSeg()+randNumSeg()+randNumSeg()}`
 }
 
-// pretty easy function name... guess
-function eliminateDoubles(){
-	
-	console.error('FINISH: eliminateDoubles')
-	return 
-	contacts.forEach(element => {// try array.filter()
-		console.log(element)
-	});
+// detect, suggest and merge doubles, and delete duplicate info in a single card
+class doubles{
+	// pretty easy function name... guess
+	static detect(){
+		console.error('FINISH: doubles.detect()')
+	}
+
+	static merge(){
+		console.error('FINISH: doubles.merge()')
+	}
 }
 
 // Format phone number to (XXX) XXX-XXXX
 function formatPhone(number){
 	const tempNum = number.match(/\(?([2-9]\d{2})\)?[-. ]?(\d{0,3})?[-. ]?(\d{0,4})?$/);
 	return tempNum && !isNaN(tempNum)? `(${tempNum[1]}) ${tempNum[2]}-${tempNum[3]}`: number
+}
+
+// easily read quoted-printable value
+function decodeQP(str){
+	return decodeURI(str.replace(/={1}/g, '%'))
 }
 
 // .replace(/(?<!http)s?:/g, "\":\"")// if turning contact directly into JSON
