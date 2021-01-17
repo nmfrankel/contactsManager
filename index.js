@@ -1,48 +1,24 @@
 // define static vars
 let loadingBar = document.getElementById('loading'),
 msgEl = document.getElementById('msg'),
-fileType = ['vcf', 'csv'],
+validExtention = ['vcf', 'csv'],
 errOccured = 0,
 countEl = document.getElementById('count'),
 contactCount = 0,
-contacts = [],
-rawContacts = '',
-resultDiv = document.querySelector('section:last-of-type>.container')
+contacts = []
+
+// start: for development
+let rawContacts = '',
+resultDiv = document.querySelector('section:last-of-type>.container'),
+testData // set in the preceding fetch
+
+/* fetch('./testing/doubleSpace.vcf')
+	.then(res => res.text())
+	.then(txt => testData = txt)
+	.catch(err => console.error(err)) */
+// end: for development
 
 
-// for development
-let testingData = ``
-/* let testingData = `BEGIN:VCARD
-VERSION:2.1
-FN;CHARSET=utf-8:Nosson  Meir Frankel
-N;Frankel;Nosson;Meir
-N:Frankel;Nosson ;Meir;;
-N;CHARSET=utf-8:Willner R  Ad
-FN:Nosson  Meir Frankel
-TEL;CELL:3121234321
-TEL;HOME:718-253-9012
-END:VCARD
-`;*/
-testingData = `BEGIN:VCARD
-VERSION:2.1
-FN;CHARSET=utf-8:Shlomo
-N;CHARSET=utf-8:Shlomo
-NOTE;CHARSET=utf-8:Best0chavrusah0ever
-TEL;CELL:7321234321
-TEL;HOME:7329871234
-EMAIL;X-INTERNET:randomemail@gmail.com
-ADR;WORK;PREF;CHARSET=utf-8:;;;Lakewood;;;
-URL:urn:uuid:8901260895162302680-8901260895162302680125
-END:VCARD
-`
-
-/* let finalData = [
-	{
-		Name: 'Frankel;Nosson;Meir;;',
-		FullName: 'Nosson Meir Frankel',
-		Tel: '+1 (231)-123-1223'
-	}
-] */
 
 
 // display a meesage to the user
@@ -62,7 +38,7 @@ async function loadFiles(reset = true){
 	displayMsg('Processing...', 'vis', 1000)
 	if(reset){
 		contactCount = 0
-		countEl.innerHTML = `Contact count: <b>${contactCount}</b>`
+		countEl.innerText = contactCount
 		rawContacts = ''
 		contacts = []
 	}
@@ -73,7 +49,7 @@ async function loadFiles(reset = true){
 		// go through each contact
 		for (let i = 0; i < files.length; i++) {
 			// only allow vcf contact cards
-			if(fileType.indexOf(files[i].name.split('.').pop())<0){
+			if(validExtention.indexOf(files[i].name.split('.').pop())<0){
 				console.log('Unsupported file type')
 				displayMsg('Unsupported file type', 'amber')
 				continue
@@ -82,7 +58,7 @@ async function loadFiles(reset = true){
 			await files[i].text().then(data => {
 				// update how many contacts are being merged
 				contactCount += data.match(/BEGIN:VCARD/gi).length
-				countEl.innerHTML = `Contact count: <b>${contactCount}</b>`
+				countEl.innerText = contactCount
 
 				// append this contact to main file
 				rawContacts += data
@@ -93,7 +69,7 @@ async function loadFiles(reset = true){
 		if(rawContacts=='') document.getElementById('file').value=''
 
 		// convert text to JSON
-		contactsToJSON()
+		vCard.parse(rawContacts)
 
 		// check if doubles exist
 		eliminateDoubles()
@@ -109,32 +85,49 @@ async function loadFiles(reset = true){
 	setTimeout(loadingBar.classList.remove('running'), 250)
 }
 
-// converts .vcf contacts into JSON
-function contactsToJSON(){
-	// turn a single contact block into an array where each item is a single contact
-	let rawTemp = rawContacts.replace(/BEGIN:VCARD(?:\n|\s\s)/gi, '["')
-	// .replace(/VERSION:\d.?\d\n|CHARSET=utf-8:/gi, '')
-	.replace(/VERSION:\d.?\d(?:\n|\s\s)/gi, '')
-	.replace(/END:VCARD(?:\n|\s\s)?/gi, ']')
-	.replace(/   ?/gi, ' ')
-	.replace(/(?:PHOTO|NOTE)[\w\d\s;=:/+-]+(?=])/gi, '')// temp remove images from processing
-	// .replace(/(?<=(PHOTO|NOTE)[\w\d\s;=:/+-]{0,})\n\s?/g, "")// converts notes or photos into one line
-	.replace(/(?:\n|\s\s)(?=\w)/gi, '",\n')
-	// .replace(/\=(?:\n|\s\s)\=/gi, '=')// fixes encoded notes
-	.replace(/(?:\n|\s\s)/gi, '"')
-	.replace(/\]\[/gi, '],[')
-	// .replace(/(?<!http)s?:/g, "\":\"")// if turning contact directly into JSON
 
-	// console.log(rawTemp);return// for development
-	defineFields(JSON.parse(`[${rawTemp}]`))
-}
-// convert JSON contacts into .vcf
-function contactsToVCF(){
-	// change into promise
+class vCard{
+	static parse(data = '') {
 
-	console.log('FINISH: once contacts are converting to JSON')
-	return
+
+// take input 'data' split each card into json then loop and split
+// then return one big json array of all the contacts
+
+
+
+		// convert a vCard into an array where each item is a single contact
+		let rawTemp = data.replace(/BEGIN:VCARD(?:\n|\s\s)/gi, '["')
+		.replace(/VERSION:\d.?\d(?:\n|\s\s)/gi, '')
+		.replace(/END:VCARD(?:\n|\s\s)?/gi, ']')
+		.replace(/(\n|\s\s)(\s|=)(?!END)/gi, '')// handles photos and encoded notes
+		.replace(/   ?/gi, ' ')
+		.replace(/(?:\n|\s\s)(?=\w)/gi, '",\n')
+		.replace(/(?:\n|\s\s)/gi, '"')
+		.replace(/\]\[/gi, '],[')
+		.replace(/\\/gi, '')
+
+		console.log(rawTemp)
+		let tempArr = JSON.parse(`[${rawTemp}]`)
+
+		// send to outer function while testing
+		defineFields(tempArr)
+	}
+
+	static generate(data = '') {
+		// return 'FINISH vCard.generate()'
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
 
 // takes array of contacts and reads fields and stores to JSON
 function defineFields(tempArr){
@@ -143,27 +136,93 @@ function defineFields(tempArr){
 		let tempContact = {}
 
 		single.forEach(item => {
-			// let uuid = Math.floor(Math.random()*6231782)
-			let matched = item.match(/^([\w\d]+)[;:](?:(.{0,}):)?(.{0,})/)// match "N:;" -> a valid empty name
+
+			let test = item.match(/^([\w-]+)[;:]([\w\d=-]{0,})?[;:]?(.{0,})/gi)
+			// ^([\w-]+)[;:]([\w\d=-]{0,})?[;:]?(.{0,})
+			console.log(test)
+
+
+			let singleValue = ['N', 'FN']
+			// let property = item.match(/^([\w-]+)[;:]/)[1]
+
+			// let matched = item.match(/^([\w-]+)[;:]([\w\d=-]{0,})?[;:]?(.{0,})/g)
+			/* if(singleValue.indexOf(matched[1])>=0){
+				tempContact[matched[1]] = matched[3].trim()
+				// tempContact[matched[1]] = {meta: matched[2], val: matched[3]}
+			}else{
+				tempContact[matched[1]] = {meta: matched[2].trim(), val: matched[3].trim()}
+			} */
+
 			// console.log(matched? `Parsed -> Main: ${matched[1]}, Sub: ${matched[2]}, Value: ${matched[3]}`: `Error: ${item}`)// for development
-
-			switch (matched[1]) {
-				case 'N':
-					tempContact.N = matched[3]
-					break;
-				case 'FN':
-					tempContact.FN = matched[3]
-					break;
-
-				default:
-					break;
-			}
 		});
 
-
-		console.log(tempContact)
+		// console.log(tempContact)
 		// contacts.push(JSON.parse(tempContact))
 	})
+}
+
+
+
+
+
+// download modified contacts
+function download(filename = false){
+	displayMsg('Your contact file will download shortly', 'vis', 500)
+
+	let exportData = 'data:text/csv;charset=utf-8,',
+	link
+
+	// load contacts
+	exportData += vCard.generate() || ''
+
+	// escape if file is empty
+	if (exportData.length <= 28){
+		displayMsg('An error occured while generating file', 'err')
+		return
+	}
+
+	// set filename
+	if(!filename) filename = `Contacts export - ${new Date().getTime().toString().substr(-6)}.vcf`
+
+	// init download
+	link = document.createElement('a')
+	link.setAttribute('href', encodeURI(exportData))
+	link.setAttribute('download', filename)
+	// link.click()
+
+	return 'Finish vCard.generate() to download data'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+
+
+
+
+// generate a unique id
+function uniqid(){
+	function randNumSeg(){
+		return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
+	}
+	return `${randNumSeg()+randNumSeg()}-${randNumSeg()}-${randNumSeg()}-${randNumSeg()}-${randNumSeg()+randNumSeg()+randNumSeg()}`
 }
 
 // pretty easy function name... guess
@@ -182,28 +241,4 @@ function formatPhone(number){
 	return tempNum && !isNaN(tempNum)? `(${tempNum[1]}) ${tempNum[2]}-${tempNum[3]}`: number
 }
 
-// download modified contacts
-function download(filename = false){
-	let exportData = 'data:text/csv;charset=utf-8,',
-	link
-
-	// load contacts
-	exportData += contactsToVCF() || ''
-
-	// escape if no contacts were loaded
-	if (exportData.length <= 28){
-		displayMsg('An error occured while downloading contacts', 'err')
-		return
-	}
-
-	// set filename
-	if(!filename) filename = `Contacts export - ${new Date().getTime().toString().substr(-6)}.vcf`
-
-	// init download
-	link = document.createElement('a')
-	link.setAttribute('href', encodeURI(exportData))
-	link.setAttribute('download', filename)
-	// link.click()
-
-	return 'Finish contactsToVCF() to download data'
-}
+// .replace(/(?<!http)s?:/g, "\":\"")// if turning contact directly into JSON
