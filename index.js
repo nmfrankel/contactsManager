@@ -1,23 +1,26 @@
 // define static vars
-let loadingBar = document.getElementById('loading'),
-msgEl = document.getElementById('msg'),
-validExtention = ['vcf', 'csv'],
+let validExtention = ['vcf', 'csv'],
 countEl = document.getElementById('count'),
-contacts = []
+contacts = [],
+contactsWindow = document.getElementById('contactsWindowBody'),
+loadingBar = document.getElementById('loading'),
+msgEl = document.getElementById('msg'),
+popCount = 0,
+overlay = document.getElementById('overlay')
 
 // default settings variables
 
 
 // start: for development
 let rawContacts = '',
-resultDiv = document.querySelector('section:last-of-type>.container'),
+resultDiv = document.querySelector('#devFill'),
 testData // set in the preceding fetch
 
-fetch('./testing/doubleSpace.vcf')
+fetch('./testing/doubles.vcf')
 	.then(res => res.text())
-	.then(txt => {
-		vCard.parse(txt)
-		testData = txt
+	.then(vCardData => {
+		console.log(vCard.parse(vCardData))
+		testData = vCardData
 	})
 	.catch(err => console.error(err))
 // end: for development
@@ -27,11 +30,14 @@ fetch('./testing/doubleSpace.vcf')
 
 // display a meesage to the user
 function displayMsg(msg = 'No message defined', type = 'vis', dura = 3500){
+	popCount++
 	msgEl.innerText = msg
 	msgEl.classList.add(type)
 
 	setTimeout(() => {
+		popCount--
 		msgEl.classList.remove(type)
+		if(!popCount) msgEl.innerHTML = '&nbsp;'
 	}, dura)
 }
 
@@ -71,7 +77,6 @@ async function loadFiles(reset = false){
 					countEl.innerText = contacts.length
 				})
 			})
-
 		}))
 
 		// resets upload button if no valid files were selected
@@ -82,6 +87,7 @@ async function loadFiles(reset = false){
 
 		// show merged results
 		resultDiv.innerText = rawContacts
+		displayContacts()
 	}else{
 		console.log('No files selected')
 		displayMsg('No files selected', 'amber')
@@ -94,18 +100,14 @@ async function loadFiles(reset = false){
 
 // manage reading and creating vCards to be used for interface
 class vCard{
-	static parse(data = '') {
-
-		// convert a vCard into an array where each item is a single contact
-		let rawTemp = data.replace(/BEGIN:VCARD(?:\n|\s\s)/gi, '["')
-		.replace(/VERSION:\d.?\d(?:\n|\s\s)/gi, '')
-		.replace(/END:VCARD(?:\n|\s\s)?/gi, ']')
-		.replace(/(\n|\s\s)(\s|=)(?!END)/gi, '')// handles photos and encoded notes
+	// convert a vCard into an array where each item is a single contact
+	static parse(data = ''){
+		let rawTemp = data.replace(/BEGIN:VCARD(\n|\s\s)VERSION:\d\.\d(\n|\s\s)/gi, '["')
+		.replace(/(\n|\s\s)?(\n|\s\s)END:VCARD(\n|\s\s)?/gi, '"],')
+		.replace(/((\n|\s\s)(\s|=)|\\)(?!END)/gi, '')// handles photos and encoded notes
 		.replace(/   ?/gi, ' ')
-		.replace(/(?:\n|\s\s)(?=\w)/gi, '",\n')
-		.replace(/(?:\n|\s\s)/gi, '"')
-		.replace(/\]\[/gi, '],[')
-		.replace(/\\/gi, '')
+		.replace(/\n|\s\s(?!$)/gi, '","')
+		.slice(0, -1)
 		let tempArr = JSON.parse(`[${rawTemp}]`)
 
 		// loop through array of contacts and convert to array of js objects
@@ -129,19 +131,21 @@ class vCard{
 					tempContacts[i][property] = value
 				}else{
 					if(!tempContacts[i][property]) tempContacts[i][property] = []
-					tempContacts[i][property].push({meta: meta, val: value})
+					tempContacts[i][property].push({meta, value: formatPhone(value)})
 				}
 				// console.log(property, meta, `'${value}'`)
 			});
 		})
 		
 		// send back an array of contacts processed
-		console.log(tempContacts)// for development
+		// console.log(tempContacts)// for development
 		return tempContacts
 	}
 
 	static generate(data = '') {
 		// return 'FINISH vCard.generate()'
+		// return resultDiv.innerText
+		return ''
 	}
 }
 
@@ -154,12 +158,73 @@ class vCard{
 
 
 
-// NOT IMPLEMENTED YET
-// NOT IMPLEMENTED YET
-// NOT IMPLEMENTED YET
-// NOT IMPLEMENTED YET
 
 
+// change visible <section>
+function changeActive(element, event){
+	if (event) event.preventDefault();
+	
+	let sectionId = element.getAttribute('sectionId')
+	// window.history.replaceState('', '', '/index?open='+sectionId)
+	
+	// check if clicked on selected option or options
+	if(element.id=='active') return
+	
+	// check if selected option has a section
+	if(document.getElementById(sectionId)){
+		// take away active status
+		document.getElementById('active').removeAttribute('id')
+		if(document.getElementsByClassName('active')[0]) document.getElementsByClassName('active')[0].classList.remove('active')
+		// set active status for new option
+		element.id = 'active'
+		document.getElementById(sectionId).classList.add('active')
+	}else{
+		// try to run a secondary function instead of a pop section
+		switch (sectionId){
+		case 'import':
+			document.getElementById('file').click();
+			break;
+		case 'export':
+			download()
+			break;
+		}
+	}
+}
+
+// display a pop-up prompt
+function displayPrompt(method, event){
+	if (event) event.preventDefault();
+	overlay.classList.add('active')
+
+	switch (method){
+		case 'settings':
+			
+			break;
+		case 'help':
+			
+			break;
+
+		default:
+			return `displayPrompt(): ${method} is not a valid method`
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
+// NOT IMPLEMENTED YET
 
 // download modified contacts
 function download(filename = false){
@@ -173,7 +238,7 @@ function download(filename = false){
 
 	// escape if file is empty
 	if (exportData.length <= 28){
-		displayMsg('An error occured while generating file', 'err')
+		displayMsg('An error occured while generating contact file', 'err')
 		return
 	}
 
@@ -210,9 +275,12 @@ class doubles{
 }
 
 // Format phone number to (XXX) XXX-XXXX
-function formatPhone(number){
+function formatPhone(number, autoAreaCode = '845'){
+	// fill in area code if missinf
+	if (number.length == 7) number = autoAreaCode + number
+
 	const tempNum = number.match(/\(?([2-9]\d{2})\)?[-. ]?(\d{0,3})?[-. ]?(\d{0,4})?$/);
-	return tempNum && !isNaN(tempNum)? `(${tempNum[1]}) ${tempNum[2]}-${tempNum[3]}`: number
+	return tempNum && !isNaN(tempNum[3])? `(${tempNum[1]}) ${tempNum[2]}-${tempNum[3]}`: number
 }
 
 // easily read quoted-printable value
@@ -220,4 +288,43 @@ function decodeQP(str){
 	return decodeURI(str.replace(/={1}/g, '%'))
 }
 
+// loop through all contacts to display them
+function displayContacts(options = null){
+	// handle header change based on 'options'
+	// handle header change based on 'options'
+
+	contacts.forEach(single => {
+		let newRow = document.createElement('div')
+		newRow.classList.add('row')
+		
+		options = ['PHOTO', 'FN', 'TEL', 'EMAIL']
+		options.forEach((item, index) => {
+			let newCell = document.createElement('cell')
+			newCell.classList.add('cell')
+			if(index==0)
+				newCell.classList.add('img'),
+				newCell.innerText = single['N'].split(";")[1]? single['N'].split(";")[1].substr(0, 1): single['N'].substr(0, 1)
+			if(single[item]) newCell.innerText = item != 'FN'? single[item][0].value: single[item]
+
+			newRow.append(newCell)
+		})
+
+		contactsWindow.append(newRow)
+	})
+
+
+	/*<div class="row">
+		<div class="cell img">N</div>
+		<div class="cell">Nosson</div>
+		<div class="cell">Frankel</div>
+		<div class="cell">example@gmail.com</div>
+		<div class="cell">7182534789</div>
+	</div>*/
+}
+
 // .replace(/(?<!http)s?:/g, "\":\"")// if turning contact directly into JSON
+
+// warn user they will loose their work when closing
+window.onbeforeunload = function(){
+	// return "By leaving the page you will loose all your work. Are you sure you want to leave?"
+}

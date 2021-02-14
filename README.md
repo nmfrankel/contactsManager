@@ -5,7 +5,8 @@ A simple intuitive interface to manage, modify & cleanup your contacts
 
 How to run the manager
     Open ``./index.html`` and follow the prompt on the opening screen
-
+  * Don't forget this runs locally and therfore once you close the screen your data will be lost
+  
 __Advanced features__
 -   merge multiple files into one locally -> no cloud for files to mysteriously be peeked on
 -   remove unwanted fields, like urn:uuid

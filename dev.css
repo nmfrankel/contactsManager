@@ -1,0 +1,31 @@
+/* borders and target zones get displayed when this file is loaded */
+header{
+	border-bottom: 1px solid #4caf50;
+}
+header #loading{
+	opacity: 1;
+	animation: loading 1500ms cubic-bezier(0.6, 0, 0.2, 1) 0s infinite;
+}
+header #buttons .button{
+	border: 1px solid #4caf50;
+}
+#msg{
+	top: 50px;
+	color: #fff;
+	background: #4caf50;
+}
+#msg::before{
+	content: 'Development mode is enabled';
+}
+aside{
+	border-right: 1px solid #4caf50;
+}
+aside a{
+	border: 1px solid #4caf50;
+}
+aside li{
+	min-width: 75px;
+	color: #4caf50;
+	fill: #4caf50;
+	background: #4caf50;
+}

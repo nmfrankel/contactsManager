@@ -8,12 +8,28 @@ body, html{
 	box-sizing: border-box;
 	margin: 0px;
 	font: 1em/1.25 Helvetica, Arial, sans-serif;
-	background: rgb(245, 245, 245);
+	background: rgb(250, 250, 250);
 }
 .darkMode{
 	background: rgb(32, 32, 32);
 	color: white;
 }
+/* overlay prompt */
+#overlay{
+	position: absolute;
+	top: -100%;
+	z-index: 15;
+	display: flex;
+	height: 100vh;
+	width: 100vw;
+	overflow: hidden;
+	background-color: rgba(95, 99, 104, .7);
+	transition: all cubic-bezier(0.6, 0, 0.2, 1) 90ms;
+}
+#overlay.active{
+	top: 0%;
+}
+/* loading bar animation */
 #loadingContainer{
 	position: absolute;
 	left: 0px;
@@ -35,8 +51,9 @@ body, html{
 	opacity: 1;
 	animation: loading 1500ms cubic-bezier(0.6, 0, 0.2, 1) 0s infinite;
 }
+/* header design */
 header{
-	position: relative;
+	position: fixed;
 	display: block;
 	height: 50px;
 	box-sizing: border-box;
@@ -50,76 +67,269 @@ header{
 	font-weight: 700;
 	/* border-bottom: 1px solid #ddd; */
 }
-header input[type=file]:valid{
-	background: pink;
-}
 header #buttons{
-	display: inline;
 	float: right;
 }
-header #download{
-	padding: 10px;
-	cursor: pointer;
-}
-header #upload{
-	position: relative;
+header #buttons .button{
 	display: inline-block;
-	height: 24px;
-	width: 50px;
+	position: relative;
+	top: -4px;
+	height: 20px;
+	padding: 5px 10px;
+	text-align: center;
+	text-decoration: none;
 }
-header #upload svg#choose{
-	position: absolute;
-	top: -11px;
-	right: 0px;
-	padding: 10px;
-	cursor: pointer;
-	transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
-	cursor: pointer;
-}
-header #upload svg#chosen{
-	position: absolute;
-	top: -1px;
-	right: 10px;
-	opacity: 0;
-	transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
-	cursor: pointer;
-}
-header input[type=file]:valid+#upload svg#choose{
-	opacity: 0;
-}
-header input[type=file]:valid+#upload svg#chosen{
-	opacity: 1;
-}
+
+
+	/* START: temp */
+	header #download{
+		padding: 10px;
+		cursor: pointer;
+	}
+	header #upload{
+		position: relative;
+		display: inline-block;
+		height: 24px;
+		width: 50px;
+	}
+	header #upload svg#choose{
+		position: absolute;
+		top: -11px;
+		right: 0px;
+		padding: 10px;
+		cursor: pointer;
+		transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+		cursor: pointer;
+	}
+	header #upload svg#chosen{
+		position: absolute;
+		top: -1px;
+		right: 10px;
+		opacity: 0;
+		transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+		cursor: pointer;
+	}
+	header input[type=file]:valid+#upload svg#choose{
+		opacity: 0;
+	}
+	header input[type=file]:valid+#upload svg#chosen{
+		opacity: 1;
+	}
+	/* END: temp */
+/* msg pop-down */
 #msg{
 	position: relative;
 	top: -100px;
 	width: 350px;
 	margin: 0 auto;
 	padding: 15px 25px;
+	border-radius: 0px 0px 8px 8px;
 	background: #ddd;
 	text-align: center;
 	transition: all cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
 }
 #msg.vis, #msg.amber, #msg.err{
-	top: 0px;
+	top: 50px;
 }
 #msg.amber{
-	background: #ee8f00;
-	color: #fff;
+	background: #fec80f;
 }
 #msg.err{
-	background: #de3e16;
+	background: #ec1a23;
 	color: #fff;
 }
-section{
-	width: 85%;
-	max-width: 1100px;
-	margin: 50px auto 35px;
+/* side menu */
+aside{
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	width: 275px;
+	height: 100vh;
+	letter-spacing: .01785714em;
+	font-family: 'Google Sans', Roboto, Arial, sans-serif;
+	font-size: .925rem;
+	font-weight: 700;
+	line-height: 1.25rem;
+	z-index: 1;
+	background: white;
 }
-section>.container{
-	padding: 25px 0;
+aside.min{
+	width: 125px;
+}
+.mainMenu{
+	margin: 0px;
+	padding: 90px 25px 0 0px;
+	box-sizing: border-box;
+	display: block;
+}
+aside.min .mainMenu{
+	width: 120px;
+}
+.mainMenu a{
+	display: block;
+	padding: 5px 0 4px 25px;
+	margin-bottom: 7px;
+	text-decoration: none;
+	user-select: none;
+	fill: #818181;
+	color: #202124;
+	border-radius: 0px 20px 20px 0px;
+	transition: all cubic-bezier(0.6, 0, 0.2, 1) 100ms;
+}
+aside.min a{
+	min-width: 75px;
+}
+.mainMenu .catIcon{
+	position: relative;
+	top: 2px;
+	display: inline-block;
+	height: 22px;
+	width: 22px;
+}
+.mainMenu li{
+	display: inline-block;
+	position: relative;
+	top: -4px;
+	list-style: none;
+	box-flex: 1;
+	flex-grow: 1;
+	flex-shrink: 1;
+	flex-basis: 0;
+	margin-left: 15px;
+	hyphens: auto;
+	word-break: break-word;
+	word-wrap: break-word;
+	text-transform: capitalize;
+}
+.mainMenu .num{
+	float: right;
+	padding-top: 3px;
+	padding-right: 16px;
+}
+aside.min li{
+	display: none;
+}
+.mainMenu a:hover{
+	background: rgba(214, 228, 252, .5);
+	color: rgba(25, 103, 210, .75);
+	fill: rgba(25, 103, 210, .75);
+}
+.mainMenu a#active, .mainMenu a:active{
+	background: rgb(214, 228, 252);
+	color: #1967d2;
+	fill: #1967d2;
+}
+/* main content design */
+main{
+	padding-left: 275px;
+}
+aside.min+main{
+	padding-left: 120px;
 }
 
+
+
+
+
+main section{
+	width: 96%;
+	max-width: 1100px;
+	margin: 25px auto;
+	/* box-shadow: -1px 1px 10px 1px #eeeeef; */
+}
+main section .container{
+	padding: 25px 0;
+}
+main label{
+	display: inline-flex;
+	align-items: center;
+	height: 25px;
+	margin: 7px 10px;
+	padding: 7px 20px;
+	font-size: .9rem;
+	font-weight: 700;
+	line-height: 1.25rem;
+	border-radius: 6px;
+	color: #2f80ea;
+	fill: #2f80ea;
+	cursor: pointer;
+}
+main label svg{
+	margin-right: 15px;
+}
+main label:hover{
+	background: rgba(214, 228, 252, .5);
+	color: rgba(25, 103, 210, .75);
+	fill: rgba(25, 103, 210, .75);
+}
+
+
+
+
+
+/* default page loaded if no contacts exist */
+#noContacts{
+	height: 60vh;
+	min-height: 400px;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-flow: column;
+}
+
+
+#defaultView{
+	background: white;
+	padding: 0 15px 10px;
+	letter-spacing: .01785714em;
+	font-size: 14px;
+}
+#defaultView #header{
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	height: 50px;
+	font-weight: 700;
+	line-height: 1.25;
+	color: #5f6368;
+	margin-bottom: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.12);
+}
+#header .title{
+	display: inline-block;
+	width: 25%;
+	box-sizing: border-box;
+}
+#header .title:first-child{
+	margin: 0 50px 0 5px;
+}
+.row{
+	display: flex;
+	align-items: center;
+	height: 35px;
+	margin: 5px 0;
+	padding: 5px 0;
+	color: #232427;
+	cursor: pointer;
+}
+.row:hover{
+	background: #f5f5f5;
+}
+.cell{
+	width: 25%;
+}
+.cell.img{
+	width: 32px;
+	height: 32px;
+	line-height: 32px;
+	margin: 0 20px 0 10px;
+	font-size: 18px;
+	text-align: center;
+	border-radius: 50%;
+	color: #fff;
+	background: #00897b;
+	text-transform: capitalize;
+}
 
 
 

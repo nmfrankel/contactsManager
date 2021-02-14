@@ -1,47 +1,200 @@
+<!--
+||\\   ||\\   //|| | | ||
+|| \\  || \\ // ||
+||  \\ ||  \\/  || | ||
+||   \\||       ||
+
+	NOSSON M FRANKEL
+	nossonmfrankel@gmail.com
+	ALL RIGHTS RESERVED, 2020
+-->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
+	<head>
+		<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="./index.css">
+	<!-- <link rel="stylesheet" href="./dev.css"> -->
 	<script src="./index.js" defer></script>
 	<title>Contact Merger</title>
 </head>
 <body>
+	<!-- handles all file uploads -->
+	<input type="file" id="file" multiple required style="display:none;" onchange="loadFiles()" accept=".vcf">
+
+	<div id="overlay" onclick="this.classList.remove('active')"></div>
+
 	<header>
+		<!-- loading bar animation -->
 		<div id="loadingContainer">
-			<div id="loading" /*class="running"*/></div>
+			<div id="loading"></div>
 		</div>
+
 		<span>Merge Contacts</span>
 		<!-- <input type="text" placeholder="Search"> -->
 
 		<span id="buttons">
-			<input type="file" id="file" multiple required style="display:none;" onchange="loadFiles()">
-			<label id="upload" for='file' title="Upload your contacts">
+			<!-- <label id="upload" for='file' title="Upload your contacts">
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="choose"><path d="M0 0h24v24H0z" fill="none"/><path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="chosen"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
 			</label>
 
 			<span id="download" onclick="download()">
 				<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"/><path fill="none" d="M0 0h24v24H0z"/></svg>
-			</span>
+			</span> -->
+			<a class="button" href="" onclick="displayPrompt('help', event)">
+				<img src="./icons/help.svg" alt="help">
+			</a>
+			<a class="button" href="" onclick="displayPrompt('settings', event)">
+				<img src="./icons/settings.svg" alt="settings">
+			</a>
 		</span>
 	</header>
 
-	<div id="msg">Loading...</div>
+	<div id="msg">&nbsp;</div>
 
-	<section>
-		<div id="count">Contact count: <b>0</b></div>
-		<div class="container">Upload a contact file</div>
-	</section>
+	<!-- side options menu -->
+	<aside /*class="min"*/>
+		<ul class="mainMenu">
+			<a sectionId="defaultView" id="active" href="" onclick="changeActive(this, event);">
+				<!-- person.svg -->
+				<svg width="20" height="20" viewBox="0 0 24 24" class="catIcon">
+					<path d="M0 0h24v24H0V0z" fill="none"></path>
+					<path d="M12 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0 9c2.7 0 5.8 1.29 6 2v1H6v-.99c.2-.72 3.3-2.01 6-2.01m0-11C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"></path>
+				</svg>
+				<li>Contacts</li>
+				<div id="count" class="num">0</div>
+			</a>
+			<a sectionId="merge" href="" onclick="changeActive(this, event);">
+				<!-- merge.svg -->
+				<svg width="20" height="20" viewBox="0 0 24 24" class="catIcon">
+					<path fill="none" d="M0 0h24v24H0V0z"></path>
+					<path d="M19 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l3 3 3-3h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 16h-4.83l-.59.59L12 20.17l-1.59-1.59-.58-.58H5V4h14v14zm-7-1l1.88-4.12L18 11l-4.12-1.88L12 5l-1.88 4.12L6 11l4.12 1.88z"></path>
+				</svg>
+				<li>Merge & fix</li>
+			</a>
+			<a sectionId="import" href="" onclick="changeActive(this, event);">
+				<!-- upload.svg -->
+				<svg width="20" height="20" viewBox="0 0 24 24" class="catIcon">
+					<path d="M4 15h2v3h12v-3h2v3c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2m4.41-7.59L11 7.83V16h2V7.83l2.59 2.59L17 9l-5-5-5 5 1.41 1.41z"></path>
+				</svg>
+				<li>Import</li>
+			</a>
+			<a sectionId="export" href="" onclick="changeActive(this, event);">
+				<!-- save.svg -->
+				<svg width="18" height="18" viewBox="0 0 24 24" class="catIcon">
+					<path d="M0 0h24v24H0z" fill="none"/>
+					<path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+				</svg>
+				<li>Export</li>
+			</a>
+			<a sectionId="trash" href="" onclick="changeActive(this, event);">
+				<!-- trash.svg -->
+				<svg width="20" height="20" viewBox="0 0 24 24" class="catIcon">
+					<path d="M15 4V3H9v1H4v2h1v13c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V6h1V4h-5zm2 15H7V6h10v13z"></path>
+					<path d="M9 8h2v9H9zm4 0h2v9h-2z"></path>
+				</svg>
+				<li>Trash</li>
+			</a>
+		</ul>
+	</aside>
+
+
+
+
+
+
+
+
+	
+	<!-- main contact view -->
+	<main>
+		<!-- default screen - no contacts prompt -->
+		<section id="noContacts" style="display: none;">
+			<img src="./icons/nocontactsicon.png" style="height: 25vh;" alt="no contacts image">
+			<h3 style="font-weight: 500;margin: 2.5rem 0;">No contacts yet</h3>
+			<div class="options">
+				<label for="">
+					<svg width="20" height="20" viewBox="0 0 24 24">
+						<path d="M0 0h24v24H0V0z" fill="none"></path>
+						<path d="M12 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0 9c2.7 0 5.8 1.29 6 2v1H6v-.99c.2-.72 3.3-2.01 6-2.01m0-11C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"></path>
+					</svg>
+					<span>Create contact</span>
+				</label>
+				<label for="file">
+					<svg width="20" height="20" viewBox="0 0 24 24">
+						<path d="M4 15h2v3h12v-3h2v3c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2m4.41-7.59L11 7.83V16h2V7.83l2.59 2.59L17 9l-5-5-5 5 1.41 1.41z"></path>
+					</svg>
+					<span>Import contacts</span>
+			</div>
+		</section>
+		
+		<!-- contacts view - main screen -->
+		<section id="defaultView" /*style="display: none;"*/>
+			<div id="header">
+				<div class="title">Name</div>
+				<div class="title">Phone</div>
+				<div class="title">Email</div>
+			</div>
+			<div id="contactsWindowBody">
+				<!-- autofill loaded contacts here -->
+
+				<div class="row">
+					<div class="cell img">N</div>
+					<div class="cell">Nosson Frankel</div>
+					<div class="cell">(718) 253-4789</div>
+					<div class="cell">example@gmail.com</div>
+				</div>
+				<div class="row">
+					<div class="cell img">N</div>
+					<div class="cell">Nosson Frankel</div>
+					<div class="cell">(718) 253-4789</div>
+					<div class="cell">example@gmail.com</div>
+				</div>
+				<div class="row">
+					<div class="cell img">N</div>
+					<div class="cell">Nosson Frankel</div>
+					<div class="cell">(718) 253-4789</div>
+					<div class="cell">example@gmail.com</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- garbage view - put all contacts deleted with -->
+		<section id="trash"></section>
+		
+
+		
+		<section>
+			<div id="devFill" /*style="overflow: hidden;max-height: 0px;"*/>Upload a contact file</div>
+		</section>
+	</main>
 </body>
 </html>
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- data:image/svg+xml;charset=utf-8,<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' fill='rgb(153,153,153)'><path d='M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'/><path d='M0 0h24v24H0z' fill='none'/></svg> -->
+
+<!-- <img src="data:image/jpg;base64,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"/> -->
+
 <!-- <section>
-	<div id="count">Contact count: <b>0</b></div>
 	<div class="container">
 		<div id="tableHeader">
 			<!-- Fill in table headers --
